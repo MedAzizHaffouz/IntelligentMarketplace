@@ -64,6 +64,14 @@ olist_order_payments_dataset.csv
 olist_order_reviews_dataset.csv
 ```
 
+### Dataset source
+
+The CSV files come from Kaggle's **Brazilian E-Commerce Public Dataset by Olist**:
+
+- [Brazilian E-Commerce Public Dataset by Olist on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+
+The [`OlistDataImporter`](./datapulse-analytics/src/main/java/com/example/datapulse_analytics/service/OlistDataImporter.java) maps the dataset's customer, order, order-item, payment, and review files into the application's H2 entities at startup.
+
 The default path is `C:\Users\azizh\Downloads\archive`. It is configured as `app.data-directory` in [`application.properties`](./datapulse-analytics/src/main/resources/application.properties). The importer currently also contains a matching hard-coded path, so update both locations if the dataset is moved.
 
 ## Run locally
