@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataPulse Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#080b14',
+                        panel: '#101624',
+                        line: '#202a3d',
+                        cyanpulse: '#5ee7f2',
+                        violetpulse: '#9b8cff'
+                    },
+                    boxShadow: {
+                        glow: '0 0 45px rgba(94, 231, 242, 0.10)'
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background: #080b14; }
+        .grid-bg {
+            background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        .glass { background: rgba(16, 22, 36, .82); backdrop-filter: blur(18px); }
+        .chart-wrap { position: relative; height: 310px; }
+    </style>
+</head>
+<body class="min-h-screen bg-ink text-slate-200 grid-bg">
+    <div class="mx-auto flex min-h-screen max-w-[1500px]">
+        <aside class="hidden w-64 shrink-0 border-r border-line bg-ink/80 p-6 lg:block">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyanpulse/15 text-cyanpulse">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-8"/></svg>
+                </div>
+                <div><div class="font-semibold tracking-tight text-white">DataPulse</div><div class="text-xs text-slate-500">Analytics Studio</div></div>
+            </div>
+            <nav class="mt-12 space-y-2 text-sm">
+                <a data-nav-target="overview" class="flex items-center gap-3 rounded-xl bg-cyanpulse/10 px-4 py-3 font-medium text-cyanpulse" href="#overview">Overview</a>
+                <a data-nav-target="state-performance" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-400 transition hover:bg-white/5 hover:text-white" href="#state-performance">Geography</a>
+                <a class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-400 transition hover:bg-white/5 hover:text-white" href="/h2-console/">Database console</a>
+            </nav>
+            <div class="mt-16 rounded-2xl border border-line bg-panel/70 p-4">
+                <div class="mb-3 flex items-center gap-2 text-xs text-slate-400"><span class="h-2 w-2 rounded-full bg-emerald-400"></span>Data source online</div>
+                <p class="text-xs leading-5 text-slate-500">Live metrics from the Olist marketplace dataset.</p>
+            </div>
+        </aside>
+
+        <main class="min-w-0 flex-1 p-5 sm:p-8 lg:p-10">
+            <header class="mb-9 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[.25em] text-cyanpulse">Executive overview</p>
+                    <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Intelligent Marketplace</h1>
+                    <p class="mt-2 text-sm text-slate-400">A focused view of your customer, order and experience signals.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400"><button id="exportPdf" type="button" class="rounded-xl border border-cyanpulse/30 bg-cyanpulse/10 px-4 py-2 font-medium text-cyanpulse transition hover:bg-cyanpulse/20">Export Report</button><span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]"></span><span id="updated">Loading live data...</span></div>
+            </header>
+
+            <section class="glass mb-6 flex flex-col gap-4 rounded-2xl border border-line p-4 shadow-glow sm:flex-row sm:items-end sm:justify-between sm:p-5">
+                <div><p class="text-xs font-semibold uppercase tracking-[.2em] text-slate-500">Filters</p><p class="mt-1 text-sm text-slate-300">Refine the dashboard view</p></div>
+                <div class="grid gap-3 sm:grid-cols-3 sm:items-end">
+                    <label class="text-xs text-slate-400">Start date<input id="startDate" type="date" class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyanpulse" /></label>
+                    <label class="text-xs text-slate-400">End date<input id="endDate" type="date" class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyanpulse" /></label>
+                    <label class="text-xs text-slate-400">State<select id="stateFilter" class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyanpulse"><option value="">All states</option></select></label>
+                </div>
+                <button id="clearFilters" type="button" class="rounded-xl border border-line px-4 py-2 text-xs font-medium text-slate-400 transition hover:border-cyanpulse hover:text-cyanpulse">Clear filters</button>
+            </section>
+
+            <section id="overview" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="glass rounded-2xl border border-line p-5 shadow-glow"><div class="mb-6 flex items-start justify-between"><span class="rounded-lg bg-cyanpulse/10 p-2 text-cyanpulse">◉</span><span class="text-xs text-emerald-400">Customers</span></div><p class="text-sm text-slate-400">Total customers</p><p id="customers" class="mt-1 text-3xl font-semibold text-white">—</p></div>
+                <div class="glass rounded-2xl border border-line p-5 shadow-glow"><div class="mb-6 flex items-start justify-between"><span class="rounded-lg bg-violetpulse/10 p-2 text-violetpulse">↗</span><span class="text-xs text-emerald-400">Orders</span></div><p class="text-sm text-slate-400">Total orders</p><p id="orders" class="mt-1 text-3xl font-semibold text-white">—</p></div>
+                <div class="glass rounded-2xl border border-line p-5 shadow-glow"><div class="mb-6 flex items-start justify-between"><span class="rounded-lg bg-amber-300/10 p-2 text-amber-300">$</span><span class="text-xs text-amber-300">Gross value</span></div><p class="text-sm text-slate-400">Total revenue</p><p id="revenue" class="mt-1 text-3xl font-semibold text-white">—</p></div>
+                <div class="glass rounded-2xl border border-line p-5 shadow-glow"><div class="mb-6 flex items-start justify-between"><span class="rounded-lg bg-rose-400/10 p-2 text-rose-300">★</span><span class="text-xs text-rose-300">Experience</span></div><p class="text-sm text-slate-400">Average review score</p><p id="score" class="mt-1 text-3xl font-semibold text-white">—</p></div>
+            </section>
+
+            <section id="geography" class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+                <div class="glass rounded-2xl border border-line p-5 sm:p-6"><div class="mb-5 flex items-center justify-between"><div><h2 class="font-semibold text-white">Customers by state</h2><p class="mt-1 text-xs text-slate-500">Distribution across the Brazilian market</p></div><span class="rounded-full border border-line px-3 py-1 text-xs text-slate-400">All states</span></div><div class="chart-wrap"><canvas id="stateBar"></canvas></div></div>
+                <div class="glass rounded-2xl border border-line p-5 sm:p-6"><div class="mb-5"><h2 class="font-semibold text-white">Market concentration</h2><p class="mt-1 text-xs text-slate-500">Top states by customer volume</p></div><div class="chart-wrap"><canvas id="stateDoughnut"></canvas></div></div>
+            </section>
+
+            <section class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+                <div class="glass rounded-2xl border border-line p-5 sm:p-6"><div class="mb-5"><h2 class="font-semibold text-white">Monthly revenue trend</h2><p class="mt-1 text-xs text-slate-500">Revenue recognized from order payments</p></div><div class="chart-wrap"><canvas id="monthlyRevenue"></canvas></div></div>
+                <div class="glass rounded-2xl border border-line p-5 sm:p-6"><div class="mb-5"><h2 class="font-semibold text-white">Payment methods</h2><p class="mt-1 text-xs text-slate-500">Revenue mix by payment type</p></div><div class="chart-wrap"><canvas id="paymentMethods"></canvas></div></div>
+            </section>
+
+            <section id="state-performance" class="glass mt-6 rounded-2xl border border-line p-5 sm:p-6"><div class="mb-5 flex items-center justify-between"><div><h2 class="font-semibold text-white">State performance</h2><p class="mt-1 text-xs text-slate-500">Customer count by region</p></div><span id="stateCount" class="text-xs text-slate-500"></span></div><div id="stateTable" class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"></div></section>
+            <p id="error" class="mt-4 hidden rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200"></p>
+        </main>
+    </div>
+    <div class="fixed bottom-5 right-5 z-50 sm:bottom-7 sm:right-7">
+        <div id="chatPanel" class="mb-3 hidden w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl shadow-black/50">
+            <div class="flex items-center justify-between border-b border-line px-4 py-3"><div><p class="text-sm font-semibold text-white">Pulse assistant</p><p class="text-[11px] text-slate-500">Ask about our marketplace data</p></div><button id="closeChat" class="text-slate-500 hover:text-white" aria-label="Close chat">×</button></div>
+            <div id="chatMessages" class="flex h-64 flex-col gap-3 overflow-y-auto p-4 text-sm"><div class="max-w-[88%] rounded-2xl rounded-tl-sm bg-white/[.06] px-3 py-2 text-slate-300">Hi! Ask me about revenue, customers, reviews, or state performance.</div></div>
+            <form id="chatForm" class="flex gap-2 border-t border-line p-3"><input id="chatInput" class="min-w-0 flex-1 rounded-xl border border-line bg-ink px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyanpulse" placeholder="e.g. Which states lead?" autocomplete="off"><button class="rounded-xl bg-cyanpulse px-3 py-2 text-xs font-semibold text-ink transition hover:brightness-110" type="submit">Send</button></form>
+        </div>
+        <button id="chatToggle" class="flex h-14 w-14 items-center justify-center rounded-full border border-cyanpulse/30 bg-cyanpulse text-ink shadow-[0_0_30px_rgba(94,231,242,.28)] transition hover:scale-105" aria-label="Open analytics assistant"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.6 8.6 0 0 1-3.2-.6L4 20l1.6-3.7A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></button>
+    </div>
+    <script>
+        const number = value => new Intl.NumberFormat('en-US').format(value || 0);
+        const money = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }).format(value || 0);
+        const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#8490a8' } }, y: { grid: { color: 'rgba(132,144,168,.12)' }, ticks: { color: '#8490a8' } } } };
+        let stateBarChart;
+        let stateDoughnutChart;
+        let monthlyRevenueChart;
+        let paymentMethodsChart;
+
+        const navLinks = [...document.querySelectorAll('[data-nav-target]')];
+        const setActiveNav = targetId => navLinks.forEach(link => {
+            const active = link.dataset.navTarget === targetId;
+            link.classList.toggle('bg-cyanpulse/10', active);
+            link.classList.toggle('font-medium', active);
+            link.classList.toggle('text-cyanpulse', active);
+            link.classList.toggle('text-slate-400', !active);
+        });
+        navLinks.forEach(link => link.addEventListener('click', () => setActiveNav(link.dataset.navTarget)));
+        const navObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+            if (entry.isIntersecting) setActiveNav(entry.target.id);
+        }), { rootMargin: '-20% 0px -65% 0px' });
+        document.querySelectorAll('#overview, #state-performance').forEach(section => navObserver.observe(section));
+
+        function filterQuery() {
+            const params = new URLSearchParams();
+            const startDate = document.querySelector('#startDate').value;
+            const endDate = document.querySelector('#endDate').value;
+            const state = document.querySelector('#stateFilter').value;
+            if (startDate) params.set('startDate', startDate);
+            if (endDate) params.set('endDate', endDate);
+            if (state) params.set('state', state);
+            return params.toString();
+        }
+
+        async function loadDashboard() {
+            try {
+                const query = filterQuery();
+                const suffix = query ? `?${query}` : '';
+                const [summaryResponse, statesResponse, revenueResponse, paymentsResponse] = await Promise.all([
+                    fetch(`/api/dashboard/summary${suffix}`),
+                    fetch(`/api/customers/stats/by-state${suffix}`),
+                    fetch(`/api/dashboard/revenue/monthly${suffix}`),
+                    fetch(`/api/dashboard/payments/by-method${suffix}`)
+                ]);
+                if (![summaryResponse, statesResponse, revenueResponse, paymentsResponse].every(response => response.ok)) throw new Error('Dashboard APIs returned an error. Restart the latest application build.');
+                const summary = await summaryResponse.json();
+                const states = (await statesResponse.json()).sort((a, b) => b.count - a.count);
+                const monthlyRevenue = await revenueResponse.json();
+                const paymentMethods = await paymentsResponse.json();
+                const stateFilter = document.querySelector('#stateFilter');
+                if (!stateFilter.dataset.loaded) {
+                    [...states].sort((a, b) => a.state.localeCompare(b.state)).forEach(item => stateFilter.add(new Option(item.state, item.state)));
+                    stateFilter.dataset.loaded = 'true';
+                }
+                document.querySelector('#customers').textContent = number(summary.totalCustomers);
+                document.querySelector('#orders').textContent = number(summary.totalOrders);
+                document.querySelector('#revenue').textContent = money(summary.totalRevenue);
+                document.querySelector('#score').textContent = `${Number(summary.averageReviewScore || 0).toFixed(2)} / 5`;
+                document.querySelector('#updated').textContent = `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                document.querySelector('#stateCount').textContent = `${states.length} states`;
+                document.querySelector('#stateTable').innerHTML = states.map((state, index) => `<div class="flex items-center justify-between rounded-xl border border-line/70 bg-white/[.02] px-4 py-3"><div class="flex items-center gap-3"><span class="text-xs text-slate-600">${String(index + 1).padStart(2, '0')}</span><span class="font-medium text-slate-200">${state.state}</span></div><span class="text-sm text-cyanpulse">${number(state.count)}</span></div>`).join('');
+                const top = states.slice(0, 8);
+                if (stateBarChart) stateBarChart.destroy();
+                if (stateDoughnutChart) stateDoughnutChart.destroy();
+                if (monthlyRevenueChart) monthlyRevenueChart.destroy();
+                if (paymentMethodsChart) paymentMethodsChart.destroy();
+                stateBarChart = new Chart(document.querySelector('#stateBar'), { type: 'bar', data: { labels: top.map(x => x.state), datasets: [{ data: top.map(x => x.count), backgroundColor: '#5ee7f2', borderRadius: 7, barThickness: 22 }] }, options: chartOptions });
+                stateDoughnutChart = new Chart(document.querySelector('#stateDoughnut'), { type: 'doughnut', data: { labels: top.map(x => x.state), datasets: [{ data: top.map(x => x.count), backgroundColor: ['#5ee7f2','#9b8cff','#fbbf24','#fb7185','#34d399','#60a5fa','#c084fc','#f97316'], borderColor: '#101624', borderWidth: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#aab4c8', padding: 14, usePointStyle: true } } } } });
+                monthlyRevenueChart = new Chart(document.querySelector('#monthlyRevenue'), { type: 'line', data: { labels: monthlyRevenue.map(x => x.month), datasets: [{ data: monthlyRevenue.map(x => Number(x.revenue)), borderColor: '#5ee7f2', backgroundColor: 'rgba(94, 231, 242, .12)', fill: true, tension: .4, pointRadius: 3, pointBackgroundColor: '#5ee7f2' }] }, options: { ...chartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => money(context.parsed.y) } } } } });
+                paymentMethodsChart = new Chart(document.querySelector('#paymentMethods'), { type: 'doughnut', data: { labels: paymentMethods.map(x => x.paymentType.replaceAll('_', ' ')), datasets: [{ data: paymentMethods.map(x => Number(x.total)), backgroundColor: ['#5ee7f2','#9b8cff','#fbbf24','#fb7185','#34d399','#60a5fa'], borderColor: '#101624', borderWidth: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#aab4c8', padding: 14, usePointStyle: true }, }, tooltip: { callbacks: { label: context => `${context.label}: ${money(context.parsed)}` } } } } });
+            } catch (error) { document.querySelector('#error').textContent = error.message; document.querySelector('#error').classList.remove('hidden'); }
+        }
+        document.querySelectorAll('#startDate, #endDate, #stateFilter').forEach(input => input.addEventListener('change', loadDashboard));
+        document.querySelector('#clearFilters').addEventListener('click', () => { document.querySelector('#startDate').value = ''; document.querySelector('#endDate').value = ''; document.querySelector('#stateFilter').value = ''; loadDashboard(); });
+
+        document.querySelector('#exportPdf').addEventListener('click', async () => {
+            const button = document.querySelector('#exportPdf');
+            const chatPanelForExport = document.querySelector('#chatPanel');
+            const chatToggleForExport = document.querySelector('#chatToggle');
+            button.textContent = 'Preparing PDF...'; button.disabled = true;
+            const wasChatOpen = !chatPanelForExport.classList.contains('hidden');
+            chatPanelForExport.classList.add('hidden'); chatToggleForExport.classList.add('hidden');
+            try {
+                const canvas = await html2canvas(document.querySelector('main'), { scale: 2, backgroundColor: '#080b14', useCORS: true, logging: false });
+          const jspdf = window.jspdf;
+          const pdf = new jspdf.jsPDF('p', 'pt', [canvas.width, canvas.height]);
+                const image = canvas.toDataURL('image/png');
+          pdf.addImage(image, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save(`datapulse-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`);
+            } finally { chatToggleForExport.classList.remove('hidden'); if (wasChatOpen) chatPanelForExport.classList.remove('hidden'); button.textContent = 'Export Report'; button.disabled = false; }
+        });
+
+        const chatPanel = document.querySelector('#chatPanel');
+        const chatMessages = document.querySelector('#chatMessages');
+        const chatInput = document.querySelector('#chatInput');
+        document.querySelector('#chatToggle').addEventListener('click', () => { chatPanel.classList.toggle('hidden'); if (!chatPanel.classList.contains('hidden')) chatInput.focus(); });
+        document.querySelector('#closeChat').addEventListener('click', () => chatPanel.classList.add('hidden'));
+        const addChatMessage = (message, user = false) => { const bubble = document.createElement('div'); bubble.className = user ? 'ml-auto max-w-[88%] rounded-2xl rounded-br-sm bg-cyanpulse px-3 py-2 text-ink' : 'max-w-[88%] rounded-2xl rounded-tl-sm bg-white/[.06] px-3 py-2 text-slate-300'; bubble.textContent = message; chatMessages.appendChild(bubble); chatMessages.scrollTop = chatMessages.scrollHeight; };
+        document.querySelector('#chatForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const message = chatInput.value.trim();
+            if (!message) return;
+            addChatMessage(message, true); chatInput.value = '';
+            try {
+                const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message }) });
+                if (!response.ok) throw new Error('The assistant is temporarily unavailable.');
+                const result = await response.json(); addChatMessage(result.reply);
+            } catch (error) { addChatMessage(error.message); }
+        });
+        loadDashboard();
+    </script>
+</body>
+</html>
